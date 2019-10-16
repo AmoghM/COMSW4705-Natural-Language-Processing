@@ -7,6 +7,7 @@ Yassine Benajiba
 import sys
 from collections import defaultdict
 from math import fsum
+import string
 
 class Pcfg(object): 
     """
@@ -41,37 +42,34 @@ class Pcfg(object):
         rhs = tuple(rhs_s.strip().split())
         return (lhs, rhs, prob)
 
-    def verify_grammar(self,key):
+    def verify_grammar(self):
         """
         Return True if the grammar is a valid PCFG in CNF.
-        Otherwise return False. 
+        Otherwise return False.
         """
         # TODO, Part 1
-        try:
-            lhs_rule = self.lhs_to_rules[key]
+
+        for key, lhs_rule in self.lhs_to_rules.items():
             sum_prob = []
             for lhs in lhs_rule:
                 sum_prob.append(lhs[2])
-                print("LHS IS: ", lhs)
                 rhs = lhs[1]
-                if rhs[0].isupper() and rhs[1].isupper():
+                if len(rhs) == 2 and rhs[0].isupper() and rhs[1].isupper():
                     pass
-                elif rhs[0].islower() and len(rhs)==1:
+                elif len(rhs) == 1 and (rhs[0].islower() or rhs[0] in string.punctuation or rhs[0].isdigit()) :
                     pass
                 else:
                     return False
-        except KeyError:
-            return False
-        if round(fsum(sum_prob),2) == 1.0:
-            print(sum_prob)
-            return True
 
-        return False 
+            if round(fsum(sum_prob),2) != 1.0:
+                return False
+
+        return True
 
 
 if __name__ == "__main__":
     with open(sys.argv[1],'r') as grammar_file:
         grammar = Pcfg(grammar_file)
-        # print(grammar.lhs_to_rules['FLIGHTS'])
+        print(grammar.verify_grammar())
         # print(grammar.verify_grammar('FLIGHTS'))
         # print(grammar.rhs_to_rules[('ABOUT','NP')])

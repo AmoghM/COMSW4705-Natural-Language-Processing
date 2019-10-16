@@ -1,6 +1,6 @@
 """
 COMS W4705 - Natural Language Processing - Fall 2019
-Homework 2 - Parsing with Context Free Grammars 
+Homework 2 - Parsing with Context Free Grammars
 Yassine Benajiba
 """
 import math
@@ -14,12 +14,12 @@ import itertools
 def check_table_format(table):
     """
     Return true if the backpointer table object is formatted correctly.
-    Otherwise return False and print an error.  
+    Otherwise return False and print an error.
     """
-    if not isinstance(table, dict): 
+    if not isinstance(table, dict):
         sys.stderr.write("Backpointer table is not a dict.\n")
         return False
-    for split in table: 
+    for split in table:
         if not isinstance(split, tuple) and len(split) ==2 and \
           isinstance(split[0], int)  and isinstance(split[1], int):
             sys.stderr.write("Keys of the backpointer table must be tuples (i,j) representing spans.\n")
@@ -28,19 +28,19 @@ def check_table_format(table):
             sys.stderr.write("Value of backpointer table (for each span) is not a dict.\n")
             return False
         for nt in table[split]:
-            if not isinstance(nt, str): 
+            if not isinstance(nt, str):
                 sys.stderr.write("Keys of the inner dictionary (for each span) must be strings representing nonterminals.\n")
                 return False
             bps = table[split][nt]
             if isinstance(bps, str): # Leaf nodes may be strings
-                continue 
+                continue
             if not isinstance(bps, tuple):
                 sys.stderr.write("Values of the inner dictionary (for each span and nonterminal) must be a pair ((i,k,A),(k,j,B)) of backpointers. Incorrect type: {}\n".format(bps))
                 return False
             if len(bps) != 2:
                 sys.stderr.write("Values of the inner dictionary (for each span and nonterminal) must be a pair ((i,k,A),(k,j,B)) of backpointers. Found more than two backpointers: {}\n".format(bps))
                 return False
-            for bp in bps: 
+            for bp in bps:
                 if not isinstance(bp, tuple) or len(bp)!=3:
                     sys.stderr.write("Values of the inner dictionary (for each span and nonterminal) must be a pair ((i,k,A),(k,j,B)) of backpointers. Backpointer has length != 3.\n".format(bp))
                     return False
@@ -53,12 +53,12 @@ def check_table_format(table):
 def check_probs_format(table):
     """
     Return true if the probability table object is formatted correctly.
-    Otherwise return False and print an error.  
+    Otherwise return False and print an error.
     """
-    if not isinstance(table, dict): 
+    if not isinstance(table, dict):
         sys.stderr.write("Probability table is not a dict.\n")
         return False
-    for split in table: 
+    for split in table:
         if not isinstance(split, tuple) and len(split) ==2 and isinstance(split[0], int) and isinstance(split[1], int):
             sys.stderr.write("Keys of the probability must be tuples (i,j) representing spans.\n")
             return False
@@ -66,7 +66,7 @@ def check_probs_format(table):
             sys.stderr.write("Value of probability table (for each span) is not a dict.\n")
             return False
         for nt in table[split]:
-            if not isinstance(nt, str): 
+            if not isinstance(nt, str):
                 sys.stderr.write("Keys of the inner dictionary (for each span) must be strings representing nonterminals.\n")
                 return False
             prob = table[split][nt]
@@ -85,9 +85,9 @@ class CkyParser(object):
     A CKY parser.
     """
 
-    def __init__(self, grammar): 
+    def __init__(self, grammar):
         """
-        Initialize a new parser instance from a grammar. 
+        Initialize a new parser instance from a grammar.
         """
         self.grammar = grammar
 
@@ -101,7 +101,7 @@ class CkyParser(object):
         n = len(tokens)
         table = [[[] for i in range(0, n)] for j in range(0, n)]
         for i in range(0,len(tokens)):
-            rules = self.grammar.rhs_to_rules[(tokens[i],)]
+            rules = grammar.rhs_to_rules[(tokens[i],)]
             for rule in rules:
                 table[i][i].append(rule[0])
 
@@ -113,14 +113,15 @@ class CkyParser(object):
                         union = list(itertools.product(table[i][k-1],table[k][j-1]))
                         for un in union:
                             if un in self.grammar.rhs_to_rules:
-                                non_terminal = self.grammar.rhs_to_rules[un]
+                                non_terminal = grammar.rhs_to_rules[un]
                                 for nt in non_terminal:
                                     table[i][j-1].append(nt[0])
+
         if self.grammar.startsymbol in table[0][n-1]:
             return True
 
         return False
-       
+
     def parse_with_backpointers(self, tokens):
         """
         Parse the input tokens and return a parse table and a probability table.
@@ -160,26 +161,23 @@ class CkyParser(object):
                                       probs[span][nt[0]] = math.log2(nt[2]) + probs[(i, k)][un[0]] + probs[(k, j)][un[1]]
         return table, probs
 
-def get_tree(chart,i,j,nt):
+def get_tree(chart, i,j,nt):
     """
     Return the parse-tree rooted in non-terminal nt and covering span i,j.
     """
     # TODO: Part 4
-    if j-i == 1:
+    if j - i == 1:
         output = (nt, chart[i, j][nt])
         return output
-    try:
-        out1 = get_tree(chart, chart[(i,j)][nt][0][1], chart[(i,j)][nt][0][2], chart[(i,j)][nt][0][0])
-        out2 = get_tree(chart, chart[(i,j)][nt][1][1], chart[(i,j)][nt][1][2], chart[(i,j)][nt][1][0])
-        return (nt, out1, out2)
-    except KeyError:
-        print("MISSING KEY")
-        return None
-       
+
+    out1 = get_tree(chart, chart[(i, j)][nt][0][1], chart[(i, j)][nt][0][2], chart[(i, j)][nt][0][0])
+    out2 = get_tree(chart, chart[(i, j)][nt][1][1], chart[(i, j)][nt][1][2], chart[(i, j)][nt][1][0])
+    return (nt, out1, out2)
+
 if __name__ == "__main__":
-    
-    with open('atis3.pcfg','r') as grammar_file: 
-        grammar = Pcfg(grammar_file) 
+
+    with open('atis3.pcfg','r') as grammar_file:
+        grammar = Pcfg(grammar_file)
         parser = CkyParser(grammar)
         toks =['flights', 'from','miami', 'to', 'cleveland','.']
         # toks = ['miami', 'flights', 'cleveland', 'from', 'to', '.']
